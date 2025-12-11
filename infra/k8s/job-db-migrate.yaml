@@ -1,0 +1,79 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: clothing-ns
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrate
+        image: registry.example.com/clothing/backend:dev
+        # TODO: Update image tag
+        command: ["npm", "run", "migrate"]
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: DB_HOST
+          value: "mysql-svc"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: clothing-secrets
+              key: mysql-database
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: clothing-secrets
+              key: mysql-app-user
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: clothing-secrets
+              key: mysql-app-password
+      backoffLimit: 3
+---
+# CronJob for scheduled migrations (optional)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-migrate-scheduled
+  namespace: clothing-ns
+spec:
+  schedule: "0 2 * * *"  # Run at 2 AM daily
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: migrate
+            image: registry.example.com/clothing/backend:dev
+            command: ["npm", "run", "migrate"]
+            env:
+            - name: NODE_ENV
+              value: "production"
+            - name: DB_HOST
+              value: "mysql-svc"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: clothing-secrets
+                  key: mysql-database
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: clothing-secrets
+                  key: mysql-app-user
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: clothing-secrets
+                  key: mysql-app-password
+          backoffLimit: 3
+

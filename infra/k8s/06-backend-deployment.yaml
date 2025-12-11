@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: clothing-ns
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: registry.example.com/clothing/backend:dev
+        # TODO: Update image tag in CI/CD pipeline
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: PORT
+          value: "3000"
+        - name: NODE_ENV
+          value: "production"
+        - name: DB_HOST
+          value: "mysql-svc"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: clothing-secrets
+              key: mysql-database
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: clothing-secrets
+              key: mysql-app-user
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: clothing-secrets
+              key: mysql-app-password
+        - name: MINIO_ENDPOINT
+          value: "minio-svc:9000"
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: clothing-secrets
+              key: minio-access-key
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: clothing-secrets
+              key: minio-secret-key
+        - name: MINIO_BUCKET
+          value: "clothing-images"
+        - name: MINIO_USE_SSL
+          value: "false"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /api/liveness
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+  namespace: clothing-ns
+  labels:
+    app: backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: backend
+---
+# Optional: NodePort service for direct access (if not using Ingress)
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-nodeport
+  namespace: clothing-ns
+  labels:
+    app: backend
+spec:
+  type: NodePort
+  ports:
+  - port: 3000
+    targetPort: 3000
+    nodePort: 30081
+    protocol: TCP
+    name: http
+  selector:
+    app: backend
+

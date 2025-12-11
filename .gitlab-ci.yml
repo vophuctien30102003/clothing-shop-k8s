@@ -1,0 +1,104 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  REGISTRY: registry.example.com
+  IMAGE_NAME_BACKEND: clothing/backend
+  IMAGE_NAME_FRONTEND: clothing/frontend
+  DOCKER_DRIVER: overlay2
+
+build-backend:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY
+  script:
+    - cd backend
+    - docker build -t $REGISTRY/$IMAGE_NAME_BACKEND:$CI_COMMIT_SHA .
+    - docker build -t $REGISTRY/$IMAGE_NAME_BACKEND:latest .
+    - docker push $REGISTRY/$IMAGE_NAME_BACKEND:$CI_COMMIT_SHA
+    - docker push $REGISTRY/$IMAGE_NAME_BACKEND:latest
+  only:
+    - main
+    - develop
+
+build-frontend:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY
+  script:
+    - cd frontend
+    - docker build -t $REGISTRY/$IMAGE_NAME_FRONTEND:$CI_COMMIT_SHA .
+    - docker build -t $REGISTRY/$IMAGE_NAME_FRONTEND:latest .
+    - docker push $REGISTRY/$IMAGE_NAME_FRONTEND:$CI_COMMIT_SHA
+    - docker push $REGISTRY/$IMAGE_NAME_FRONTEND:latest
+  only:
+    - main
+    - develop
+
+test-backend:
+  stage: test
+  image: node:18
+  script:
+    - cd backend
+    - npm ci
+    - npm test || echo "Tests not implemented yet"
+  only:
+    - merge_requests
+    - main
+    - develop
+
+test-frontend:
+  stage: test
+  image: node:18
+  script:
+    - cd frontend
+    - npm ci
+    - npm test || echo "Tests not implemented yet"
+  only:
+    - merge_requests
+    - main
+    - develop
+
+deploy-staging:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  script:
+    - kubectl config use-context $KUBE_CONTEXT_STAGING
+    - |
+      sed -i "s|registry.example.com/clothing/backend:dev|$REGISTRY/$IMAGE_NAME_BACKEND:$CI_COMMIT_SHA|g" infra/k8s/06-backend-deployment.yaml
+      sed -i "s|registry.example.com/clothing/frontend:dev|$REGISTRY/$IMAGE_NAME_FRONTEND:$CI_COMMIT_SHA|g" infra/k8s/07-frontend-deployment.yaml
+    - kubectl apply -f infra/k8s/
+    - kubectl -n clothing-ns rollout status deploy/backend --timeout=5m
+    - kubectl -n clothing-ns rollout status deploy/frontend --timeout=5m
+  only:
+    - develop
+  environment:
+    name: staging
+    url: https://staging.shop.example.com
+
+deploy-production:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  script:
+    - kubectl config use-context $KUBE_CONTEXT_PRODUCTION
+    - |
+      sed -i "s|registry.example.com/clothing/backend:dev|$REGISTRY/$IMAGE_NAME_BACKEND:$CI_COMMIT_SHA|g" infra/k8s/06-backend-deployment.yaml
+      sed -i "s|registry.example.com/clothing/frontend:dev|$REGISTRY/$IMAGE_NAME_FRONTEND:$CI_COMMIT_SHA|g" infra/k8s/07-frontend-deployment.yaml
+    - kubectl apply -f infra/k8s/
+    - kubectl -n clothing-ns rollout status deploy/backend --timeout=5m
+    - kubectl -n clothing-ns rollout status deploy/frontend --timeout=5m
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    url: https://shop.example.com
+

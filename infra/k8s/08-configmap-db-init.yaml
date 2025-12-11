@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-sql
+  namespace: clothing-ns
+data:
+  init.sql: |
+    -- Create database (if not exists)
+    CREATE DATABASE IF NOT EXISTS clothingdb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    
+    USE clothingdb;
+    
+    -- Create application user with privileges
+    CREATE USER IF NOT EXISTS 'clothing_app'@'%' IDENTIFIED BY 'Cl0th1ngApp@123';
+    GRANT ALL PRIVILEGES ON clothingdb.* TO 'clothing_app'@'%';
+    FLUSH PRIVILEGES;
+    
+    -- Users table
+    CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        phone VARCHAR(20) UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        full_name VARCHAR(255),
+        role ENUM('admin', 'manager', 'user', 'guest') DEFAULT 'user',
+        email_verified BOOLEAN DEFAULT FALSE,
+        phone_verified BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_email (email),
+        INDEX idx_phone (phone),
+        INDEX idx_role (role)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    
+    -- Products table
+    CREATE TABLE IF NOT EXISTS products (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        price DECIMAL(10, 2) NOT NULL,
+        category VARCHAR(100),
+        size VARCHAR(50),
+        color VARCHAR(50),
+        stock_quantity INT DEFAULT 0,
+        image_url VARCHAR(500),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_category (category),
+        INDEX idx_price (price),
+        INDEX idx_size (size),
+        INDEX idx_color (color)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    
+    -- Orders table
+    CREATE TABLE IF NOT EXISTS orders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        status ENUM('pending', 'shipping', 'done', 'cancelled') DEFAULT 'pending',
+        total_amount DECIMAL(10, 2) NOT NULL,
+        shipping_address TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    
+    -- Order items table
+    CREATE TABLE IF NOT EXISTS order_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        order_id INT NOT NULL,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 1,
+        price DECIMAL(10, 2) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+        INDEX idx_order_id (order_id),
+        INDEX idx_product_id (product_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    
+    -- Insert sample admin user (password: Admin@123 - hash this in production)
+    -- NOTE: This is a placeholder. Use proper password hashing (bcrypt) in production
+    INSERT IGNORE INTO users (email, password_hash, full_name, role, email_verified) 
+    VALUES ('admin@clothing-shop.com', 'PLACEHOLDER_HASH', 'Admin User', 'admin', TRUE);
+    
+    -- Insert sample products
+    INSERT IGNORE INTO products (name, description, price, category, size, color, stock_quantity) VALUES
+    ('T-Shirt Basic', 'Comfortable cotton t-shirt', 29.99, 'T-Shirt', 'M', 'White', 100),
+    ('Jeans Classic', 'Classic blue jeans', 79.99, 'Jeans', 'L', 'Blue', 50),
+    ('Hoodie Winter', 'Warm winter hoodie', 89.99, 'Hoodie', 'XL', 'Black', 30);
+
