@@ -81,11 +81,11 @@ Frontend sẽ chạy tại `http://localhost:5173`
 ```bash
 # Backend
 cd backend
-docker build -t registry.example.com/clothing/backend:dev .
+docker build -t vophuctien01/clothing-backend:dev .
 
 # Frontend
 cd frontend
-docker build -t registry.example.com/clothing/frontend:dev .
+docker build -t vophuctien01/clothing-k8s-frontend:dev .
 ```
 
 ### Deploy to Kubernetes

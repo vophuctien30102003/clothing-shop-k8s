@@ -1,41 +1,46 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const Order = sequelize.define('Order', {
+const OrderItem = sequelize.define('OrderItem', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
     },
-    user_id: {
+    order_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'users',
+            model: 'orders',
             key: 'id',
         },
     },
-    total_amount: {
+    product_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'products',
+            key: 'id',
+        },
+    },
+    price: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         validate: {
             min: 0,
         },
     },
-    status: {
-        type: DataTypes.ENUM('pending', 'processing', 'completed', 'cancelled'),
-        defaultValue: 'pending',
+    quantity: {
+        type: DataTypes.INTEGER,
         allowNull: false,
-    },
-    created_at: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW,
-        allowNull: false,
+        validate: {
+            min: 1,
+        },
     },
 }, {
-    tableName: 'orders',
+    tableName: 'order_items',
     timestamps: false,
 });
 
-module.exports = { Order };
+module.exports = { OrderItem };
 

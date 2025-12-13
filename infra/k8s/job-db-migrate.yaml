@@ -9,7 +9,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: migrate
-        image: registry.example.com/clothing/backend:dev
+        image: vophuctien01/clothing-backend:dev
         # TODO: Update image tag
         command: ["npm", "run", "migrate"]
         env:
@@ -51,7 +51,7 @@ spec:
           restartPolicy: Never
           containers:
           - name: migrate
-            image: registry.example.com/clothing/backend:dev
+            image: vophuctien01/clothing-backend:dev
             command: ["npm", "run", "migrate"]
             env:
             - name: NODE_ENV

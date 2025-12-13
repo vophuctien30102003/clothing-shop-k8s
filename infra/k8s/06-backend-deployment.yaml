@@ -17,8 +17,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: registry.example.com/clothing/backend:dev
-        # TODO: Update image tag in CI/CD pipeline
+        image: vophuctien01/clothing-backend:dev
         ports:
         - containerPort: 3000
           name: http

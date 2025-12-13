@@ -25,13 +25,31 @@ docker push registry.example.com/clothing/backend:dev
 
 ```bash
 cd frontend
-docker build -t registry.example.com/clothing/frontend:dev .
+docker build -t vophuctien01/clothing-k8s-frontend:dev .
 # Hoặc với tag từ git commit
-docker build -t registry.example.com/clothing/frontend:dev-$(git rev-parse --short HEAD) .
-docker push registry.example.com/clothing/frontend:dev
+docker build -t vophuctien01/clothing-k8s-frontend:dev-$(git rev-parse --short HEAD) .
+docker push vophuctien01/clothing-k8s-frontend:dev
 ```
 
-**Note**: Thay `registry.example.com` bằng registry thực tế (Docker Hub, GCR, ECR, etc.)
+**⚠️ Lưu ý quan trọng về Domain/Registry:**
+
+1. **`registry.example.com`** - KHÔNG phải domain cho dự án
+   - Đây là **Container Registry** (nơi lưu trữ Docker images)
+   - Cần thay bằng registry thực tế:
+     - **Docker Hub**: `docker.io/yourusername/clothing-backend` hoặc `yourusername/clothing-backend`
+     - **Google Container Registry (GCR)**: `gcr.io/your-project-id/clothing-backend`
+     - **AWS ECR**: `123456789.dkr.ecr.region.amazonaws.com/clothing-backend`
+     - **Azure Container Registry**: `yourregistry.azurecr.io/clothing-backend`
+     - **GitHub Container Registry**: `ghcr.io/yourusername/clothing-backend`
+
+2. **`shop.example.com`** - Đây mới là domain cho người dùng truy cập website
+   - Được cấu hình trong `infra/k8s/09-ingress.yaml`
+   - Người dùng truy cập: `http://shop.example.com` hoặc `https://shop.example.com`
+   - Cần thay bằng domain thực tế của bạn (ví dụ: `shop.yourdomain.com`)
+
+**Tóm lại:**
+- `registry.example.com` = Nơi lưu Docker images (chỉ dùng nội bộ, không phải domain công khai)
+- `shop.example.com` = Domain website (người dùng truy cập)
 
 ### 2. Update Image Tags trong K8s Manifests
 
@@ -41,9 +59,14 @@ Trước khi deploy, cập nhật image tags trong:
 
 ```yaml
 # Thay đổi từ:
-image: registry.example.com/clothing/backend:dev
+image: vophuctien01/clothing-backend:dev
 # Thành:
-image: registry.example.com/clothing/backend:dev-abc1234
+image: vophuctien01/clothing-backend:dev-abc1234
+
+# Frontend:
+image: vophuctien01/clothing-k8s-frontend:dev
+# Thành:
+image: vophuctien01/clothing-k8s-frontend:dev-abc1234
 ```
 
 ### 3. Deploy to Kubernetes

@@ -7,9 +7,9 @@ on:
     branches: [ main, develop ]
 
 env:
-  REGISTRY: registry.example.com
-  IMAGE_NAME_BACKEND: clothing/backend
-  IMAGE_NAME_FRONTEND: clothing/frontend
+  DOCKER_USERNAME: vophuctien01
+  IMAGE_NAME_BACKEND: vophuctien01/clothing-backend
+  IMAGE_NAME_FRONTEND: vophuctien01/clothing-k8s-frontend
 
 jobs:
   build-backend:
@@ -36,15 +36,15 @@ jobs:
       - name: Build Docker image
         working-directory: ./backend
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }} .
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:latest .
+          docker build -t ${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }} .
+          docker build -t ${{ env.IMAGE_NAME_BACKEND }}:latest .
 
       - name: Push Docker image
         if: github.event_name == 'push'
         run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:latest
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
+          docker push ${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
+          docker push ${{ env.IMAGE_NAME_BACKEND }}:latest
 
   build-frontend:
     runs-on: ubuntu-latest
@@ -70,15 +70,15 @@ jobs:
       - name: Build Docker image
         working-directory: ./frontend
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }} .
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:latest .
+          docker build -t ${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }} .
+          docker build -t ${{ env.IMAGE_NAME_FRONTEND }}:latest .
 
       - name: Push Docker image
         if: github.event_name == 'push'
         run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:latest
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
+          docker push ${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
+          docker push ${{ env.IMAGE_NAME_FRONTEND }}:latest
 
   deploy:
     needs: [build-backend, build-frontend]
@@ -97,8 +97,8 @@ jobs:
 
       - name: Update image tags
         run: |
-          sed -i "s|registry.example.com/clothing/backend:dev|${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}|g" infra/k8s/06-backend-deployment.yaml
-          sed -i "s|registry.example.com/clothing/frontend:dev|${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}|g" infra/k8s/07-frontend-deployment.yaml
+          sed -i "s|vophuctien01/clothing-backend:dev|${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}|g" infra/k8s/06-backend-deployment.yaml
+          sed -i "s|vophuctien01/clothing-k8s-frontend:dev|${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}|g" infra/k8s/07-frontend-deployment.yaml
 
       - name: Deploy to Kubernetes
         run: |
