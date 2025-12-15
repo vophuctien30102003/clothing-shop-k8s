@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
 import './Auth.css';
@@ -9,7 +9,30 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated()) {
+      const role = user?.role;
+      if (role === 'admin' || role === 'manager') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        navigate('/home', { replace: true });
+      }
+    }
+  }, [authLoading, isAuthenticated, user, navigate]);
+
+  if (authLoading) {
+    return <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>;
+  }
+
+  if (isAuthenticated()) {
+    const role = user?.role;
+    if (role === 'admin' || role === 'manager') {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+    return <Navigate to="/home" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,8 +41,16 @@ export default function Login() {
 
     try {
       const response = await authAPI.login(formData);
-      login(response.data.user, response.data.token);
-      navigate('/profile');
+      const userData = response.data.user;
+      login(userData, response.data.token);
+      
+      // Redirect dựa trên role từ response data
+      const role = userData?.role;
+      if (role === 'admin' || role === 'manager') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/home');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Đăng nhập thất bại');
     } finally {

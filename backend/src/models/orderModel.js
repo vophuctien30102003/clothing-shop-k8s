@@ -10,10 +10,6 @@ const Order = sequelize.define('Order', {
     user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: 'users',
-            key: 'id',
-        },
     },
     total_amount: {
         type: DataTypes.DECIMAL(10, 2),

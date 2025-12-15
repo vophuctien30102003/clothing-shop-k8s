@@ -4,6 +4,8 @@ const cors = require('cors');
 
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const app = express();
 
@@ -17,6 +19,8 @@ app.get('/', (req, res) => {
 
 app.use('/api', userRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/orders', orderRoutes);
 app.use('/api/reports', reportRoutes);
 
 app.use((err, req, res, next) => {

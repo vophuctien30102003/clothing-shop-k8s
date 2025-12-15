@@ -56,6 +56,12 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = () => user?.role === 'admin';
   const isManager = () => user?.role === 'manager' || user?.role === 'admin';
   const isUser = () => user?.role === 'user' || isManager();
+  const isAdminOrManager = () => isManager();
+  const getRedirectPath = () => {
+    if (!user) return '/home';
+    if (isAdminOrManager()) return '/admin/dashboard';
+    return '/home';
+  };
 
   return (
     <AuthContext.Provider
@@ -70,6 +76,8 @@ export const AuthProvider = ({ children }) => {
         isAdmin,
         isManager,
         isUser,
+        isAdminOrManager,
+        getRedirectPath,
       }}
     >
       {children}

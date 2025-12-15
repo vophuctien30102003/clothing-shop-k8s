@@ -49,5 +49,31 @@ const authorize = (...roles) => {
     };
 };
 
-module.exports = { authenticateLogin, authorize };
+const optionalAuth = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        req.user = null;
+        return next();
+    }
+
+    try {
+        const token = authHeader.substring(7);
+        const decoded = verifyToken(token);
+        if (decoded) {
+            const user = await UserService.findById(decoded.userId);
+            if (user) {
+                req.user = {
+                    id: user.id,
+                    email: user.email,
+                    role: user.role,
+                    verified: user.verified,
+                };
+            }
+        }
+    } catch (error) {
+    }
+    next();
+};
+
+module.exports = { authenticateLogin, authorize, optionalAuth };
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
